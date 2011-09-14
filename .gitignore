@@ -14,3 +14,4 @@ MANIFEST.bak
 Linkulator-Twitter-*
 *.bs
 *.o
+state.json

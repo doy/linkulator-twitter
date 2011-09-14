@@ -1,0 +1,46 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+# PODNAME: update_twitter
+
+use JSON;
+use Linkulator::Twitter;
+use Path::Class;
+use Try::Tiny;
+
+my $state_file = 'state.json';
+if (!-e $state_file) {
+    file($state_file)->openw->print(encode_json({last_tweeted => 0}));
+}
+
+my $conf = decode_json(file($state_file)->slurp);
+
+my $lt = Linkulator::Twitter->new(
+    exists $conf->{token} && exists $conf->{token_secret}
+        ? (twitter_access_token        => $conf->{token},
+           twitter_access_token_secret => $conf->{token_secret})
+        : (),
+);
+
+if (my $url = $lt->authenticate_twitter) {
+    print "Authorize this app at $url and enter the pin here: ";
+
+    my $pin = <STDIN>;
+    chomp $pin;
+
+    my ($token, $secret) = $lt->authenticate_twitter($pin);
+    $conf->{token} = $token;
+    $conf->{token_secret} = $secret;
+}
+
+try {
+    $lt->update;
+    for my $link (sort { $a->id <=> $b->id } $lt->links) {
+        next if $link->id <= $conf->{last_tweeted};
+        $lt->tweet($link);
+        $conf->{last_tweeted} = $link->id;
+    }
+}
+finally {
+    file($state_file)->openw->print(encode_json($conf));
+};
