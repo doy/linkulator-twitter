@@ -1,5 +1,6 @@
 package Linkulator::Twitter::Link;
 use Moose;
+use namespace::autoclean;
 
 has id => (
     is       => 'ro',
@@ -20,6 +21,5 @@ has desc => (
 );
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
 
 1;
